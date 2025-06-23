@@ -39,7 +39,7 @@ If you prefer to run the setup manually or need to troubleshoot:
 
 ```bash
 # Build the DLIOM Docker image
-docker build -f Dockerfile.dliom -t dliom:latest .
+docker build -f Dockerfile.ouster -t ouster:latest .
 
 # Test connection to Ouster (replace with your device's hostname)
 ping -4 -c3 os-1222225000331.local
@@ -59,7 +59,7 @@ docker run -it --rm \
   -v /sys:/sys \
   -v /tmp/.X11-unix:/tmp/.X11-unix \
   -e DISPLAY=$DISPLAY \
-  jetson-ouster:latest
+  ouster:latest
 ```
 
 ### Step 3: Set Up Topic Relays
