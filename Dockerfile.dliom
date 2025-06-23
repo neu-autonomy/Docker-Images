@@ -1,5 +1,5 @@
 # Use your existing Ouster image as base
-FROM jetson-ouster:latest
+FROM ouster:latest
 
 # Install DLIOM dependencies
 RUN apt-get update && apt-get install -y \
