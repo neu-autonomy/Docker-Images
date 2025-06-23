@@ -1,0 +1,48 @@
+FROM ros:humble
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-rosdep \
+    python3-colcon-common-extensions \
+    python3-vcstool \
+    git \
+    curl \
+    build-essential \
+    cmake \
+    libasio-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+
+RUN rosdep init || true && rosdep update
+
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/* 
+
+
+WORKDIR /ros2_ws/src
+
+RUN git clone https://github.com/westonrobot/ugv_sdk.git
+
+
+RUN git clone https://github.com/leonardjmihs/scout_ros2.git scout_ros2_leonard && \
+    cd scout_ros2_leonard && \
+    git checkout humble
+
+WORKDIR /ros2_ws
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && colcon build --symlink-install"
+
+
+RUN echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc && \
+    echo "source /ros2_ws/install/setup.bash" >> ~/.bashrc
+
+
+
+ENV DEBIAN_FRONTEND=
+
+CMD ["/bin/bash"]
+

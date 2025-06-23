@@ -1,0 +1,43 @@
+# Use your existing Ouster image as base
+FROM jetson-ouster:latest
+
+# Install DLIOM dependencies
+RUN apt-get update && apt-get install -y \
+    libomp-dev \
+    libpcl-dev \
+    libeigen3-dev \
+    software-properties-common \
+    cmake \
+    libboost-all-dev \
+    libtbb-dev \
+    git \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add GTSAM PPA and install GTSAM (following README instructions)
+RUN add-apt-repository ppa:borglab/gtsam-release-4.1 \
+    && apt-get update \
+    && apt-get install -y \
+        libgtsam-dev \
+        libgtsam-unstable-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create workspace if it doesn't exist
+RUN mkdir -p /ros2_ws/src
+
+# Copy DLIOM package to workspace
+COPY . /ros2_ws/src/direct_lidar_inertial_odometry_and_mapping/
+
+# Set working directory
+WORKDIR /ros2_ws
+
+# Source ROS2 and build DLIOM package
+RUN /bin/bash -c "source /opt/ros/humble/setup.bash && \
+    colcon build --packages-select direct_lidar_inertial_odometry_and_mapping --cmake-args -DCMAKE_BUILD_TYPE=Release"
+
+# Update setup files
+RUN echo "source /ros2_ws/install/setup.bash" >> ~/.bashrc
+
+WORKDIR /ros2_ws
+
+CMD ["bash"]
