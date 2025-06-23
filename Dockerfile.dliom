@@ -26,7 +26,7 @@ RUN add-apt-repository ppa:borglab/gtsam-release-4.1 \
 RUN mkdir -p /ros2_ws/src
 
 # Copy DLIOM package to workspace
-COPY . /ros2_ws/src/direct_lidar_inertial_odometry_and_mapping/
+COPY dliom-feature-ros2/ /ros2_ws/src/direct_lidar_inertial_odometry_and_mapping/
 
 # Set working directory
 WORKDIR /ros2_ws
