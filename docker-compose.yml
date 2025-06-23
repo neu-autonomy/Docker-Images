@@ -1,5 +1,4 @@
-version: '3.8'
-
+version: '3.3'
 services:
   ouster-driver:
     image: ouster:latest
@@ -12,37 +11,41 @@ services:
       - /dev:/dev
       - /sys:/sys
       - /tmp/.X11-unix:/tmp/.X11-unix
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "ros2", "topic", "list", "|", "grep", "ouster"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
+      ros2 launch ouster_ros sensor.launch.xml
+      sensor_hostname:=169.254.253.236"
+    restart: "no"
+    
   imu-relay:
     image: dliom:latest
     container_name: imu-relay
     network_mode: host
     depends_on:
-      ouster-driver:
-        condition: service_healthy
+      - ouster-driver
     command: >
+      bash -c "sleep 15 &&
+      source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
       ros2 run topic_tools relay /ouster/imu /ouster/imu_best_effort
-      --qos-reliability best_effort --qos-durability volatile
-    restart: unless-stopped
-
+      --qos-reliability reliable --qos-durability volatile"
+    restart: "no"
+    
   pointcloud-relay:
     image: dliom:latest
     container_name: pointcloud-relay
     network_mode: host
     depends_on:
-      ouster-driver:
-        condition: service_healthy
+      - ouster-driver
     command: >
+      bash -c "sleep 15 &&
+      source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
       ros2 run topic_tools relay /ouster/points /ouster/points_best_effort
-      --qos-reliability best_effort --qos-durability volatile
-    restart: unless-stopped
-
+      --qos-reliability reliable --qos-durability volatile"
+    restart: "no"
+    
   dliom:
     image: dliom:latest
     container_name: dliom
@@ -50,6 +53,7 @@ services:
     privileged: true
     environment:
       - DISPLAY=${DISPLAY}
+      - XDG_RUNTIME_DIR=/tmp/runtime-root
     volumes:
       - /dev:/dev
       - /sys:/sys
@@ -58,8 +62,10 @@ services:
       - imu-relay
       - pointcloud-relay
     command: >
-      ros2 launch direct_lidar_inertial_odometry_and_mapping dliom.launch.py
-      rviz:=true
-      pointcloud_topic:=/ouster/points
-      imu_topic:=/ouster/imu
-    restart: unless-stopped
+      bash -c '
+      sleep 30 &&
+      source /opt/ros/humble/setup.bash &&
+      source /ros2_ws/install/setup.bash &&
+      echo "Starting DLIOM..." &&
+      ros2 launch direct_lidar_inertial_odometry_and_mapping dliom.launch.py rviz:=true pointcloud_topic:=/ouster/points_best_effort imu_topic:=/ouster/imu_best_effort'
+    restart: "no"
