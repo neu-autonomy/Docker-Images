@@ -30,27 +30,28 @@ info() {
 }
 
 # Function to detect Ouster LiDAR
+# Fixed detect_ouster function - send informational output to stderr
 detect_ouster() {
-    log "Detecting Ouster LiDAR..."
+    log "Detecting Ouster LiDAR..." >&2
     
-    echo "Please check your Ouster device sticker for the serial number."
-    echo "Hostname format: os-[serial_number].local"
-    read -p "Enter Ouster hostname (e.g., os-1222225000331.local): " hostname
+    echo "Please check your Ouster device sticker for the serial number." >&2
+    echo "Hostname format: os-[serial_number].local" >&2
+    read -p "Enter Ouster hostname (e.g., os-122225000331.local): " hostname
     
     # Validate hostname
     if ping -c 1 -W 2 "$hostname" &> /dev/null; then
-        echo "$hostname"
+        echo "$hostname"  # Only this goes to stdout
         return 0
     else
-        error "Cannot reach $hostname. Please check connection and try again."
+        error "Cannot reach $hostname. Please check connection and try again." >&2
         return 1
     fi
 }
 
-# Function to get IP from hostname
+# Also fix get_ip_from_hostname function
 get_ip_from_hostname() {
     local hostname=$1
-    log "Getting IP address for $hostname..."
+    log "Getting IP address for $hostname..." >&2
     
     # Try multiple methods to resolve IP
     local ip=""
@@ -69,15 +70,14 @@ get_ip_from_hostname() {
     fi
     
     if [[ -n "$ip" ]]; then
-        log "Found IP address: $ip"
-        echo "$ip"
+        log "Found IP address: $ip" >&2
+        echo "$ip"  # Only this goes to stdout
         return 0
     else
-        error "Could not resolve IP address for $hostname"
+        error "Could not resolve IP address for $hostname" >&2
         return 1
     fi
 }
-
 # Function to check prerequisites
 check_prerequisites() {
     log "Checking prerequisites..."
