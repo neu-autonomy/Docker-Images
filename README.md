@@ -7,7 +7,7 @@ This repository contains the setup for Direct LiDAR-Inertial Odometry and Mappin
 - Docker installed on your system
 - Ouster LiDAR connected via Ethernet
 - X11 forwarding support for GUI applications
-- The `idiom-feature-ros2` package downloaded to the same folder as the Docker images
+- The `dliom-feature-ros2` package downloaded to the same folder as the Docker images
 
 ## Hardware Setup
 
@@ -109,7 +109,7 @@ ros2 launch direct_lidar_inertial_odometry_and_mapping dliom.launch.py \
 
 ```
 project/
-├── idiom-feature-ros2/          # Required ROS2 package
+├── dliom-feature-ros2/          # Required ROS2 package
 ├── Dockerfile.dliom             # DLIOM Docker configuration
 ├── docker-compose.yml           # Docker Compose configuration
 ├── run_dliom.sh                # Automated setup script
