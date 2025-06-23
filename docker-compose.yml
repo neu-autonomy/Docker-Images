@@ -1,0 +1,65 @@
+version: '3.8'
+
+services:
+  ouster-driver:
+    image: ouster:latest
+    container_name: ouster-driver
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /dev:/dev
+      - /sys:/sys
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "ros2", "topic", "list", "|", "grep", "ouster"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  imu-relay:
+    image: dliom:latest
+    container_name: imu-relay
+    network_mode: host
+    depends_on:
+      ouster-driver:
+        condition: service_healthy
+    command: >
+      ros2 run topic_tools relay /ouster/imu /ouster/imu_best_effort
+      --qos-reliability best_effort --qos-durability volatile
+    restart: unless-stopped
+
+  pointcloud-relay:
+    image: dliom:latest
+    container_name: pointcloud-relay
+    network_mode: host
+    depends_on:
+      ouster-driver:
+        condition: service_healthy
+    command: >
+      ros2 run topic_tools relay /ouster/points /ouster/points_best_effort
+      --qos-reliability best_effort --qos-durability volatile
+    restart: unless-stopped
+
+  dliom:
+    image: dliom:latest
+    container_name: dliom
+    network_mode: host
+    privileged: true
+    environment:
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /dev:/dev
+      - /sys:/sys
+      - /tmp/.X11-unix:/tmp/.X11-unix
+    depends_on:
+      - imu-relay
+      - pointcloud-relay
+    command: >
+      ros2 launch direct_lidar_inertial_odometry_and_mapping dliom.launch.py
+      rviz:=true
+      pointcloud_topic:=/ouster/points
+      imu_topic:=/ouster/imu
+    restart: unless-stopped
