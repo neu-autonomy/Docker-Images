@@ -1,0 +1,69 @@
+# ------------------------------------------------------------
+# Base: ARM64 ROS 2 Humble (works on Jetson Orin / Ubuntu 22.04)
+# If you build on x86_64 hosts, you'll need qemu-user-static for cross-builds.
+# ------------------------------------------------------------
+FROM arm64v8/ros:humble-ros-base
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    ROS_DISTRO=humble \
+    RMW_IMPLEMENTATION=rmw_cyclonedds_cpp \
+    LANG=C.UTF-8 LC_ALL=C.UTF-8
+
+# System deps & build tooling
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential cmake ninja-build git curl wget \
+    python3-pip python3-colcon-common-extensions python3-vcstool \
+    python3-rosdep python3-rosinstall-generator \
+    ros-humble-ros2cli ros-humble-ros-testing \
+    # common libs many Nav2 plugins depend on
+    libeigen3-dev libyaml-cpp-dev libboost-all-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# (Optional) Python utilities your launch or tooling might need
+# RUN pip3 install --no-cache-dir <your-py-deps>
+
+# Initialize rosdep
+RUN rosdep init || true
+RUN rosdep update
+
+# Workspace
+SHELL ["/bin/bash", "-c"]
+WORKDIR /ws
+RUN mkdir -p src
+
+# ------------------------------------------------------------
+# Copy your autonomy stack (contains nail_utils & costmap launch)
+# ------------------------------------------------------------
+COPY . /ws/src/autonomy-stack
+
+# ------------------------------------------------------------
+# Bring in Navigation2 from source (stable branch for Humble)
+# If you only want costmap packages, you could slim this down;
+# building the full Nav2 tree avoids missing deps on arm64.
+# ------------------------------------------------------------
+WORKDIR /ws/src
+RUN echo "---
+repositories:
+  navigation2:
+    type: git
+    url: https://github.com/ros-planning/navigation2.git
+    version: humble
+" > nav2.repos
+
+RUN vcs import < nav2.repos
+
+# Install all dependencies (repo + Nav2)
+WORKDIR /ws
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
+    rosdep install --from-paths src --ignore-src -r -y
+
+# Build (you can limit to costmap/bringup if you prefer --packages-up-to)
+RUN . /opt/ros/$ROS_DISTRO/setup.sh && \
+    colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+
+# Source on login
+RUN echo 'source /opt/ros/$ROS_DISTRO/setup.bash' >> /root/.bashrc && \
+    echo 'source /ws/install/setup.bash' >> /root/.bashrc
+
+# Default command (we’ll override with docker-compose)
+CMD ["bash"]
